@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Happy 6th Monthsary!</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Comic Sans MS', cursive;
+      background: linear-gradient(to bottom right, #ffe0ec, #e0f7ff);
+      overflow-x: hidden;
+    }
+    .container {
+      text-align: center;
+      padding: 2em;
+    }
+    h1 {
+      color: #ff4081;
+      font-size: 2.8em;
+      margin-bottom: 0.3em;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    p {
+      font-size: 1.2em;
+      color: #333;
+    }
+    button {
+      padding: 1em 2em;
+      background-color: #ff4081;
+      border: none;
+      color: white;
+      font-size: 1em;
+      border-radius: 25px;
+      cursor: pointer;
+      margin-top: 1em;
+    }
+    .love-meter {
+      margin-top: 2em;
+    }
+    input[type=range] {
+      width: 80%;
+    }
+    #loveOutput {
+      font-size: 1.5em;
+      margin-top: 0.5em;
+      color: #e91e63;
+      animation: heartbeat 1s infinite;
+    }
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+    .modal, .overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 10;
+    }
+    .overlay {
+      background: rgba(0,0,0,0.5);
+      z-index: 9;
+    }
+    .modal.show, .overlay.show {
+      display: block;
+    }
+    .modal {
+      background: white;
+      max-width: 90%;
+      padding: 2em;
+      margin: auto;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      position: fixed;
+      border-radius: 15px;
+      text-align: center;
+      z-index: 11;
+    }
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+    #gameCanvas {
+      display: block;
+      margin: 1em auto;
+      border: 2px solid #ff4081;
+      border-radius: 10px;
+      background: white;
+    }
+    #scoreDisplay {
+      font-weight: bold;
+      color: #ff4081;
+    }
+    .countdown {
+      margin-top: 1em;
+      font-size: 1em;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confetti"></canvas>
+  <canvas id="hearts"></canvas>
+
+  <div class="container">
+    <h1>🎉 Happy 6th Monthsary! 🎉</h1>
+    <p>We’ve come this far... and it’s just the beginning ❤️</p>
+
+    <button onclick="showModal()">🎁 Tap for a Surprise</button>
+
+    <div class="love-meter">
+      <p>How much do you love me? 😘</p>
+      <input type="range" min="0" max="100" value="0" oninput="showLove(this.value)">
+      <div id="loveOutput">0% in love 😳</div>
+    </div>
+
+    <button onclick="startGame()">💘 Play Catch the Hearts</button>
+    <div class="countdown" id="countdown"></div>
+  </div>
+
+  <div class="overlay" id="overlay" onclick="closeModal()"></div>
+  <div class="modal" id="modal">
+    <h2>You're my favorite hello and my hardest goodbye. 💖</h2>
+    <p>Happy 6 months, mahal! Thank you for staying. Here’s to forever. 🥂</p>
+    <button onclick="closeModal()">Close</button>
+  </div>
+
+  <div class="overlay" id="gameOverlay" onclick="closeGame()"></div>
+  <div class="modal" id="gameModal">
+    <h2>Catch the Hearts 💓</h2>
+    <canvas id="gameCanvas" width="300" height="400"></canvas>
+    <p id="scoreDisplay">Score: 0</p>
+    <button onclick="closeGame()">Exit Game</button>
+  </div>
+
+  <script>
+    // Confetti animation
+    const canvas = document.getElementById("confetti");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const confetti = Array.from({length: 150}).map(() => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      r: Math.random() * 6 + 4,
+      d: Math.random() * 150 + 50,
+      color: `hsl(${Math.random()*360}, 100%, 70%)`
+    }));
+    function drawConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let c of confetti) {
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+        ctx.fillStyle = c.color;
+        ctx.fill();
+      }
+      for (let c of confetti) {
+        c.y += Math.cos(c.d) + 2;
+        if (c.y > canvas.height) {
+          c.y = -10;
+          c.x = Math.random() * canvas.width;
+        }
+      }
+    }
+    setInterval(drawConfetti, 33);
+
+    // Floating hearts background
+    const heartCanvas = document.getElementById("hearts");
+    const htx = heartCanvas.getContext("2d");
+    heartCanvas.width = window.innerWidth;
+    heartCanvas.height = window.innerHeight;
+    const hearts = Array.from({ length: 50 }).map(() => ({
+      x: Math.random() * heartCanvas.width,
+      y: Math.random() * heartCanvas.height,
+      size: Math.random() * 20 + 10,
+      speed: Math.random() * 2 + 0.5,
+      opacity: Math.random()
+    }));
+    function drawFloatingHearts() {
+      htx.clearRect(0, 0, heartCanvas.width, heartCanvas.height);
+      for (let h of hearts) {
+        drawHeart(htx, h.x, h.y, h.size, '#ff5eaa', h.opacity);
+        h.y -= h.speed;
+        if (h.y + h.size < 0) {
+          h.y = heartCanvas.height + h.size;
+          h.x = Math.random() * heartCanvas.width;
+        }
+      }
+    }
+    function drawHeart(ctx, x, y, size, color, alpha = 1) {
+      const topCurveHeight = size * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(x, y + topCurveHeight);
+      ctx.bezierCurveTo(x, y, x - size / 2, y, x - size / 2, y + topCurveHeight);
+      ctx.bezierCurveTo(x - size / 2, y + (size + topCurveHeight) / 2, x, y + (size + topCurveHeight) / 2, x, y + size);
+      ctx.bezierCurveTo(x, y + (size + topCurveHeight) / 2, x + size / 2, y + (size + topCurveHeight) / 2, x + size / 2, y + topCurveHeight);
+      ctx.bezierCurveTo(x + size / 2, y, x, y, x, y + topCurveHeight);
+      ctx.closePath();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    setInterval(drawFloatingHearts, 40);
+
+    // Countdown
+    function startCountdown(targetDate) {
+      const countdown = document.getElementById("countdown");
+      function updateCountdown() {
+        const now = new Date();
+        const diff = targetDate - now;
+        if (diff < 0) {
+          countdown.innerHTML = "Cheers to many more!";
+          return;
+        }
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hrs = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const mins = Math.floor((diff / (1000 * 60)) % 60);
+        countdown.innerHTML = `Next Monthsary in: ${days}d ${hrs}h ${mins}m 💞`;
+      }
+      setInterval(updateCountdown, 1000);
+    }
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    startCountdown(nextMonth);
+
+    // Love Meter
+    function showLove(val) {
+      const output = document.getElementById("loveOutput");
+      output.innerText = val + "% in love " + (val >= 70 ? "💖" : val >= 30 ? "🥰" : "😳");
+    }
+
+    // Surprise modal
+    function showModal() {
+      document.getElementById("modal").classList.add("show");
+      document.getElementById("overlay").classList.add("show");
+    }
+    function closeModal() {
+      document.getElementById("modal").classList.remove("show");
+      document.getElementById("overlay").classList.remove("show");
+    }
+
+    // Game logic
+    let gameCtx, catcher, heartsArr, gameInterval, score = 0;
+    let messagesShown = 0;
+    const heartMessages = [
+      "You're loved ❤️", "You make me smile 😊", "Thank you for staying 🫶",
+      "I’m lucky to have you 🍀", "Forever starts with you 💍", "You matter most 🌟",
+      "You’re my favorite person 🧸", "You feel like home 🏡", "Always, in all ways 💌",
+      "Can’t wait for more days with you ⏳", "You're my calm in the storm 🌧️", "Sweetest hello 💬",
+      "Warmest hug 🤗", "Strongest support 🛡️", "Cutest face 🐰", "Brightest light 🌞",
+      "Safe space 🛏️", "Biggest cheerleader 📣", "Secret keeper 🔐", "End game 🕹️", "I love you 💘"
+    ];
+
+    function startGame() {
+      document.getElementById("gameModal").classList.add("show");
+      document.getElementById("gameOverlay").classList.add("show");
+
+      const canvas = document.getElementById("gameCanvas");
+      gameCtx = canvas.getContext("2d");
+      catcher = { x: 120, y: 360, width: 60, height: 20 };
+      heartsArr = [];
+      score = 0;
+      messagesShown = 0;
+
+      document.getElementById("scoreDisplay").innerText = "Score: 0";
+
+      for (let i = 0; i < 5; i++) {
+        heartsArr.push({
+          x: Math.random() * 260,
+          y: Math.random() * -400,
+          size: 20 + Math.random() * 10,
+          speed: 1 + Math.random() * 2
+        });
+      }
+
+      gameInterval = setInterval(drawGame, 30);
+    }
+
+    function drawGame() {
+      gameCtx.clearRect(0, 0, 300, 400);
+      gameCtx.fillStyle = "#ff4081";
+      gameCtx.fillRect(catcher.x, catcher.y, catcher.width, catcher.height);
+
+      for (let h of heartsArr) {
+        h.y += h.speed;
+        if (h.y > 400) {
+          h.y = -20;
+          h.x = Math.random() * 280;
+        }
+
+        if (
+          h.y + h.size > catcher.y &&
+          h.x + h.size > catcher.x &&
+          h.x < catcher.x + catcher.width
+        ) {
+          score++;
+          if (messagesShown < 21) {
+            setTimeout(() => {
+              alert(heartMessages[messagesShown] || "You caught a heart! ❤️");
+            }, 100);
+            messagesShown++;
+          }
+          if (score >= 21) {
+            clearInterval(gameInterval);
+            setTimeout(() => {
+              alert("🎉 You caught all 21 hearts! Game over. Love fully caught! 💖");
+              closeGame();
+            }, 400);
+            return;
+          }
+          h.y = -20;
+          h.x = Math.random() * 280;
+          document.getElementById("scoreDisplay").innerText = "Score: " + score;
+        }
+
+        drawHeart(gameCtx, h.x, h.y, h.size, "red");
+      }
+    }
+
+    function closeGame() {
+      document.getElementById("gameModal").classList.remove("show");
+      document.getElementById("gameOverlay").classList.remove("show");
+      clearInterval(gameInterval);
+    }
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowLeft") catcher.x -= 15;
+      if (e.key === "ArrowRight") catcher.x += 15;
+    });
+  </script>
+</body>
+</html>
